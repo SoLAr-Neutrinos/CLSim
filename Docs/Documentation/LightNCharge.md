@@ -66,6 +66,7 @@ for(int photonIt = 0; photonIt < total_time_vuv->at(17).size(); photonIt++){
 Same holds for the charge output.
 
 - **TL:DR** :  Returns `vector<vector<double>>` of PD-IDs and hit time for each photon/electron
+- Example in `Docs/ExampleMacro`
 
 ## Placement Files
 

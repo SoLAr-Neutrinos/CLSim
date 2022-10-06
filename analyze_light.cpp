@@ -271,50 +271,51 @@ int main(int argc, char* argv[]){
 				}
 		}
 
+		if(charge){
+			std::cout << "Simulating Charge" << std::endl;
+			// Here we loop over all the optical detectors and detectors.
+			// We then loop over all the hits and determine if the hit is within/above the detector.
+			for(int op_channel = 0; op_channel < number_opdets; op_channel++) {
+				if(op_channel % (number_opdets/10) == 0)
+					std::cout << "op_channel: " << op_channel
+					   << " of " << number_opdets
+					   << " (" << (double)op_channel*100./(double)number_opdets <<"%)"<< endl;
 
-		std::cout << "Simulating Charge" << std::endl;
-		// Here we loop over all the optical detectors and detectors.
-		// We then loop over all the hits and determine if the hit is within/above the detector.
-		for(int op_channel = 0; op_channel < number_opdets; op_channel++) {
-			if(op_channel % (number_opdets/10) == 0)
-				std::cout << "op_channel: " << op_channel
-				   << " of " << number_opdets
-			           << " (" << (double)op_channel*100./(double)number_opdets <<"%)"<< endl;
+				std::vector<double> time_charge;
+				// Position of the optical detector
+				TVector3 OpDetPoint(opdet_position[op_channel][0],opdet_position[op_channel][1],opdet_position[op_channel][2]);
+				for(int HitIt = 0; HitIt < hit_start_x->size(); HitIt++){
+					// Get all the starting points of the electrons for hit HitIt
+					std::vector<TVector3> electronStartingPoints_i = electronStartingPoints[HitIt];
+					// Loop over all the electrons for hit HitIt
+					for(int eIt = 0; eIt <numElectrons[HitIt] ; eIt++){
+						TVector3 electronStartingPoint = electronStartingPoints_i[eIt];
+						double x_pos = electronStartingPoint.X();
+						double y_pos = electronStartingPoint.Y();
+						double z_pos = electronStartingPoint.Z();
+						// Project down on the the z=0 plane
+						double drift_time = z_pos/parameters::drift_velocity;
+						// Currently hard coded 10cm detectors. Need to change this to be more general using the PixSize
+						if (abs(x_pos - OpDetPoint.X()) < 5 && abs(y_pos - OpDetPoint.Y()) < 5 ) {
+							time_charge.push_back(drift_time);
+						}
+					}// end for of number electrons
+				}// end for of hits
+				total_time_charge.push_back(time_charge);
+			}// end for of opdet
 
-			std::vector<double> time_charge;
-			// Position of the optical detector
-			TVector3 OpDetPoint(opdet_position[op_channel][0],opdet_position[op_channel][1],opdet_position[op_channel][2]);
-			for(int HitIt = 0; HitIt < hit_start_x->size(); HitIt++){
-				// Get all the starting points of the electrons for hit HitIt
-				std::vector<TVector3> electronStartingPoints_i = electronStartingPoints[HitIt];
-				// Loop over all the electrons for hit HitIt
-				for(int eIt = 0; eIt <numElectrons[HitIt] ; eIt++){
-					TVector3 electronStartingPoint = electronStartingPoints_i[eIt];
-					double x_pos = electronStartingPoint.X();
-					double y_pos = electronStartingPoint.Y();
-					double z_pos = electronStartingPoint.Z();
-					// Project down on the the z=0 plane
-					double drift_time = z_pos/parameters::drift_velocity;
-					// Currently hard coded 10cm detectors. Need to change this to be more general using the PixSize
-					if (abs(x_pos - OpDetPoint.X()) < 5 && abs(y_pos - OpDetPoint.Y()) < 5 ) {
-						time_charge.push_back(drift_time);
-					}
-				}// end for of number electrons
-			}// end for of hits
-			total_time_charge.push_back(time_charge);
-		}// end for of opdet
+			// Get total number of electrons
+			int total_num_electrons = 0;
+			for(int i=0; i<numElectrons.size(); i++){
+				total_num_electrons += numElectrons[i];
+			}
 
-		// Get total number of electrons
-		int total_num_electrons = 0;
-		for(int i=0; i<numElectrons.size(); i++){
-			total_num_electrons += numElectrons[i];
-		}
-
-		cout << "Total number of electrons: " << total_num_electrons << endl;
-		cout << total_time_charge.size() << endl;
-		for(int i=0; i<total_time_charge.size(); i++){
-			cout << total_time_charge[i].size() << endl;
-		}
+			cout << "Total number of electrons: " << total_num_electrons << endl;
+			cout << total_time_charge.size() << endl;
+			for(int i=0; i<total_time_charge.size(); i++){
+				cout << total_time_charge[i].size() << endl;
+			}
+		}// End charge if
 
 		// Go through every SiPM
 		std::cout << "Simulating Light" << std::endl;

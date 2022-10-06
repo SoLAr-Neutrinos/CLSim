@@ -4,7 +4,7 @@ import numpy as np
 from mpl_toolkits import mplot3d
 import csv
 
-with open('../SoLAr_10cm_FieldCage.txt', 'r') as csvfile:
+with open('./full_dune.txt', 'r') as csvfile:
     reader = csv.reader(csvfile, delimiter=' ')
     x = []
     y = []
@@ -24,20 +24,20 @@ with open('../SoLAr_10cm_FieldCage.txt', 'r') as csvfile:
         else:
             print("Error: orientation not found")
 
-with open('./SoLAr_1cm.txt', 'r') as csvfile:
-    reader = csv.reader(csvfile, delimiter=' ')
-    for row in reader:
-        x.append(float(row[1]))
-        y.append(float(row[2]))
-        z.append(float(row[3]))
-        if(float(row[5]) == 1):
-            orientation.append('r')
-        elif(float(row[5]) == 2):
-            orientation.append('b')
-        elif(float(row[5]) == 3):
-            orientation.append('g')
-        else:
-            print("Error: orientation not found")
+# with open('./SoLAr_1cm.txt', 'r') as csvfile:
+#     reader = csv.reader(csvfile, delimiter=' ')
+#     for row in reader:
+#         x.append(float(row[1]))
+#         y.append(float(row[2]))
+#         z.append(float(row[3]))
+#         if(float(row[5]) == 1):
+#             orientation.append('r')
+#         elif(float(row[5]) == 2):
+#             orientation.append('b')
+#         elif(float(row[5]) == 3):
+#             orientation.append('g')
+#         else:
+#             print("Error: orientation not found")
 
 
 
@@ -58,8 +58,8 @@ for i in range(length):
 
     if( orientation[i] == 'r'):
         xsize = 0.0
-        ysize = 5
-        zsize = 5
+        ysize = 3
+        zsize = 3
         y_low = y[i] - ysize
         y_high = y[i] + ysize
         z_low = z[i] - zsize
@@ -69,9 +69,9 @@ for i in range(length):
         zcoords  =  [ z_low,z_low,z_high,z_high]
 
     if( orientation[i] == 'b'):
-        xsize = 5
+        xsize = 3
         ysize = 0.0
-        zsize = 5
+        zsize = 3
         x_low = x[i] - xsize
         x_high = x[i] + xsize
         z_low = z[i] - zsize
@@ -81,8 +81,8 @@ for i in range(length):
         zcoords  =  [ z_low, z_high, z_high, z_low ]
 
     if( orientation[i] == 'g'):
-        xsize = 0.3
-        ysize = 0.3
+        xsize = 2.
+        ysize = 2.
         zsize = 0.0
         x_low = x[i] - xsize
         x_high = x[i] + xsize
@@ -94,7 +94,7 @@ for i in range(length):
 
     verts = [list(zip(xcoords,ycoords,zcoords))]
     if(orientation[i] == 'g'):
-        ax.add_collection3d(Poly3DCollection(verts, facecolor=orientation[i], linewidths=0, edgecolors='k', alpha=.25))
+        ax.add_collection3d(Poly3DCollection(verts, facecolor=orientation[i], linewidths=1, edgecolors='k', alpha=.25))
     else:
         ax.add_collection3d(Poly3DCollection(verts, facecolor=orientation[i], linewidths=1, edgecolors='k', alpha=.25))
 
@@ -105,7 +105,7 @@ ax.set_zlabel('Z')
 # ax.set_ylim(0, 300)
 # ax.set_zlim(0, 300)
 
-ax.auto_scale_xyz([0, 200], [0, 200], [0, 200])
+ax.auto_scale_xyz([0, 100], [0, 100], [0, 100])
 
 
 plt.show()

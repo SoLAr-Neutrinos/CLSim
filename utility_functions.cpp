@@ -172,3 +172,8 @@ double utility_functions::Rn_function(double *x, double *par)
 
       return gauss;
       }
+
+
+double utility_functions::Area2Radius(double area) {
+  return sqrt(area / TMath::Pi());
+}

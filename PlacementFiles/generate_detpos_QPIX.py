@@ -2,19 +2,20 @@ xlen = 1400
 ylen = 600
 zlen = 360
 
-pixel_size = 10
+distance = 10
 
-x_num = xlen / pixel_size
-y_num = ylen / pixel_size
-z_num = zlen / pixel_size
+x_num = xlen / distance
+y_num = ylen / distance
+z_num = zlen / distance
 i = j = 0;
 num = 0
+
 
 # # z= 360 plane
 # while( i<x_num ):
 #     j = 0
 #     while( j<y_num ):
-#         print( num, pixel_size/2 + i*pixel_size, pixel_size/2 + j*pixel_size, zlen , 1, 3 )
+#         print( num, distance/2 + i*distance, distance/2 + j*distance, zlen , 1, 3 )
 #         j += 1
 #         num += 1
 #     i += 1
@@ -24,7 +25,7 @@ i = j = 0;
 while( i<x_num ):
     j = 0
     while( j<y_num ):
-        print( num, pixel_size/2 + i*pixel_size, pixel_size/2 + j*pixel_size, 0 , 1, 3 )
+        print( num, distance/2 + i*distance, distance/2 + j*distance, 0 , 1, 3 )
         j += 1
         num += 1
     i += 1
@@ -35,7 +36,7 @@ while( i<x_num ):
 # while( i<x_num ):
 #     j = 0
 #     while( j<z_num ):
-#         print( num, pixel_size/2 + i*pixel_size, 0 , pixel_size/2 + j*pixel_size, 1, 2 )
+#         print( num, distance/2 + i*distance, 0 , distance/2 + j*distance, 1, 2 )
 #         j += 1
 #         num += 1
 #     i += 1
@@ -45,7 +46,7 @@ while( i<x_num ):
 # while( i<x_num ):
 #     j = 0
 #     while( j<z_num ):
-#         print( num, pixel_size/2 + i*pixel_size, ylen , pixel_size/2 + j*pixel_size, 1, 2 )
+#         print( num, distance/2 + i*distance, ylen , distance/2 + j*distance, 1, 2 )
 #         j += 1
 #         num += 1
 #     i += 1
@@ -56,7 +57,7 @@ while( i<x_num ):
 # while( i<y_num ):
 #     j = 0
 #     while( j<z_num ):
-#         print( num, 0, pixel_size/2 + i*pixel_size , pixel_size/2 + j*pixel_size, 1, 1 )
+#         print( num, 0, distance/2 + i*distance , distance/2 + j*distance, 1, 1 )
 #         j += 1
 #         num += 1
 #     i += 1
@@ -66,7 +67,7 @@ while( i<x_num ):
 # while( i<y_num ):
 #     j = 0
 #     while( j<z_num ):
-#         print( num, xlen,  pixel_size/2 + i*pixel_size, pixel_size/2 + j*pixel_size, 1, 1 )
+#         print( num, xlen,  distance/2 + i*distance, distance/2 + j*distance, 1, 1 )
 #         j += 1
 #         num += 1
 #     i += 1

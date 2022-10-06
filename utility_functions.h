@@ -53,6 +53,9 @@ public:
         //Rn Spectrum ////chrisflynn
         static double Rn_function(double *x, double *par);
 
+	// returns the radius corresponding to a given area
+	static double Area2Radius(double area);
+
 };
 
 #endif

@@ -164,6 +164,7 @@ int main(int argc, char* argv[]){
 	vector <double> *hit_length = nullptr;
   	vector<double> *particle_pdg_code = nullptr;
   	vector<double> *hit_track_id= nullptr;
+  	vector<double> *hit_process_key= nullptr;
 	double pixel_size;
 
 	// Get the tree branches
@@ -176,6 +177,7 @@ int main(int argc, char* argv[]){
 	G4InputTree->SetBranchAddress("hit_energy_deposit", &hit_energy_deposit);
 	G4InputTree->SetBranchAddress("hit_length", &hit_length);
   	G4InputTree->SetBranchAddress("hit_track_id", &hit_track_id);
+  	G4InputTree->SetBranchAddress("hit_process_key", &hit_process_key);
   	G4InputTree->SetBranchAddress("particle_pdg_code", &particle_pdg_code);
 
 	int NEventsToLoopOver = G4InputTree->GetEntries();
@@ -232,11 +234,29 @@ int main(int argc, char* argv[]){
 				// Stores the starting points for all the electrons for hit i
 			        std::vector<TVector3> electronStartingPoints_i;
 				// Stores the light/charge yield for hit i
-				lightyield[i] = hits_model.LArQL(hit_energy_deposit->at(i), hit_length->at(i), 0.5);
-				chargeyield[i] = hits_model.LArQQ(hit_energy_deposit->at(i), hit_length->at(i), 0.5);
-				// Stores the number of photons/electrons for hit i
-				numPhotons[i] = lightyield[i] * hit_energy_deposit->at(i);
-				numElectrons[i] = chargeyield[i] * hit_energy_deposit->at(i);
+				// Check if an ionisation event
+				if(hit_process_key->at(i) == 1 || hit_process_key->at(i) == 6 || hit_process_key->at(i) == 7){
+					double light_yield = hits_model.LArQL(hit_energy_deposit->at(i), hit_length->at(i), 0.5);
+					lightyield[i] = light_yield;
+
+					int number_photons = light_yield * hit_energy_deposit->at(i);
+					vector<double> v(number_photons, 0);
+					vector<double> target;
+					gRandom->RndmArray(number_photons, v.data());
+					copy_if(v.begin(), v.end(), back_inserter(target),[](float n ){ return  n < parameters::total_QE;});
+					numPhotons[i] = target.size();
+
+					chargeyield[i] = hits_model.LArQQ(hit_energy_deposit->at(i), hit_length->at(i), 0.5);
+					numElectrons[i] = chargeyield[i] * hit_energy_deposit->at(i);
+				}
+				else{
+					numPhotons[i] = 0;
+					numElectrons[i] = 0;
+					electronStartingPoints.push_back(electronStartingPoints_i);
+					continue;
+				}
+
+
 				if(charge){
 					double z_pos = hit_start_z->at(i);
 					double x_pos = hit_start_x->at(i);
@@ -255,6 +275,7 @@ int main(int argc, char* argv[]){
 					// Loop over the number of electrons and push their starting values to the hit i vector
 					// Also disperse the electrons if requried
 					for(int j=0; j<numElectrons[i]; j++){
+						if(numElectrons[i] == 0) continue;
 						if(diffusion){
 							double rand_angle = gRandom->Uniform(0,2*TMath::Pi());
 							x_pos_final = x_pos + abs(gRandom->Gaus(0, rad_trans)) * cos(rand_angle);
@@ -273,6 +294,7 @@ int main(int argc, char* argv[]){
 
 		if(charge){
 			std::cout << "Simulating Charge" << std::endl;
+
 			// Here we loop over all the optical detectors and detectors.
 			// We then loop over all the hits and determine if the hit is within/above the detector.
 			for(int op_channel = 0; op_channel < number_opdets; op_channel++) {
@@ -284,7 +306,12 @@ int main(int argc, char* argv[]){
 				std::vector<double> time_charge;
 				// Position of the optical detector
 				TVector3 OpDetPoint(opdet_position[op_channel][0],opdet_position[op_channel][1],opdet_position[op_channel][2]);
+
 				for(int HitIt = 0; HitIt < hit_start_x->size(); HitIt++){
+					// Position of the hit
+					if(hit_process_key->at(HitIt) != 1 && hit_process_key->at(HitIt) != 6 && hit_process_key->at(HitIt) != 7)
+						continue;
+
 					// Get all the starting points of the electrons for hit HitIt
 					std::vector<TVector3> electronStartingPoints_i = electronStartingPoints[HitIt];
 					// Loop over all the electrons for hit HitIt
@@ -312,9 +339,6 @@ int main(int argc, char* argv[]){
 
 			cout << "Total number of electrons: " << total_num_electrons << endl;
 			cout << total_time_charge.size() << endl;
-			for(int i=0; i<total_time_charge.size(); i++){
-				cout << total_time_charge[i].size() << endl;
-			}
 		}// End charge if
 
 		// Go through every SiPM
@@ -343,6 +367,10 @@ int main(int argc, char* argv[]){
 			int num_hits = hit_start_x->size();
 			for (int i=0; i < num_hits; i++)
 			{
+
+				if(hit_process_key->at(i) != 1 && hit_process_key->at(i) != 6 && hit_process_key->at(i) != 7)
+					continue;
+
 		   		position_list[i][0] = hit_start_x->at(i);
 		    		position_list[i][1] = hit_start_y->at(i);
 		    		position_list[i][2] = hit_start_z->at(i);
@@ -350,11 +378,11 @@ int main(int argc, char* argv[]){
 		    		double time_hit = hit_start_t->at(i); // in ns
 				time_hit*=0.001; // in us
 
-				// Light yield for the hit currently looked at
-				double light_yield = lightyield[i];
+				/* // Light yield for the hit currently looked at */
+				/* double light_yield = lightyield[i]; */
 
 				unsigned int number_photons;
-		    		number_photons = gRandom->Poisson(parameters::total_QE*light_yield*hit_energy_deposit->at(i));
+		    		number_photons = gRandom->Poisson(numPhotons[i]);
 
 				assert(number_photons >= 0);
 

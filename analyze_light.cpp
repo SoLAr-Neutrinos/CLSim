@@ -7,6 +7,7 @@
 #include <vector>
 #include <algorithm>
 #include "TH1.h"
+#include "TH2Poly.h"
 #include "TRandom.h"
 #include "TVector3.h"
 #include "data_output.h"
@@ -148,6 +149,18 @@ int main(int argc, char* argv[]){
         }
 	detector_positions_file.close();
 	int number_opdets = opdet_type.size();
+
+	// A little bit unconventional, but this is allows for a very quick sorting of the electrons
+	// We create a variable sized historgam which corresponds to the placement of the SiPMs
+	// We then sort the electrons later using the bin numbers which (correcting for a shift of 1) correspond to the SiPM number
+	   TH2Poly *h2 = new TH2Poly();
+	   for(int i = 0; i < number_opdets; ++i) {
+			int binN = h2->AddBin(opdet_position[i][0]-PixSize/2, opdet_position[i][1]-PixSize/2, opdet_position[i][0]+PixSize/2, opdet_position[i][1]+PixSize/2);
+			if(binN-1 != i) std::cout << "Bin number mismatch " << i << " " << binN<< std::endl;
+	}
+
+
+
 	std::cout << "Positions Loaded: " << number_opdets << " optical detectors." << std::endl << std::endl;
 
 	// ------- Read G4 simulation data --------
@@ -294,42 +307,23 @@ int main(int argc, char* argv[]){
 							z_pos_final = z_pos + gRandom->Gaus(0,rad_long);
 							drift_time = z_pos_final / parameters::drift_velocity ;
 						}// End diffusion if
-						// Push the starting point of the electron to the vector
-						electronStartingPoints_i.push_back(TVector3(x_pos_final, y_pos_final, z_pos_final));
+						// Find the bin of the TH2Poly that corresponds to the corresponding x,y position
+						// The -1 is there to account for the numbering of the SiPM-IDs to start at 0, while bin numbers start at 1
+						int bin = h2->FindBin(x_pos_final,y_pos_final) -1;
+						total_time_charge[bin].push_back(drift_time);
 					}
-					// Collection of all the starting points of all hits
-					electronStartingPoints.insert(electronStartingPoints.end(), electronStartingPoints_i.begin(), electronStartingPoints_i.end());
 				} // End charge if
-		}
+		}// End loop over hits
 
-
+		// Get total number of electrons
 		if(charge){
-			std::cout << "Simulating Charge" << std::endl;
-			// Here we loop over all the optical detectors and detectors.
-			// We then loop over all the hits and determine if the hit is within/above the detector.
-			// multithread: Combine both loops in one and then split the work between threads
-
-			#pragma omp parallel for shared(total_time_charge, opdet_position) collapse(2)
-			for(int op_channel = 0; op_channel < number_opdets; op_channel++) {
-				for(auto const &electronStartingPoint : electronStartingPoints){
-						if (abs(electronStartingPoint.x() - opdet_position[op_channel][0]) < 5 && abs(electronStartingPoint.y() - opdet_position[op_channel][1]) < 5 ) {
-							// make sure that only one thread is writing to the same op_channel - this should not be neccesary, and runs without it, non the less, I guess
-							#pragma omp critical
-							{
-								total_time_charge[op_channel].push_back(electronStartingPoint.z() / parameters::drift_velocity);
-							}
-						}
-				}// End loop over all the electrons
-			}// end for of opdet
-
-			// Get total number of electrons
 			int total_num_electrons = 0;
 			for(int i=0; i<total_time_charge.size(); i++){
 				total_num_electrons += total_time_charge[i].size();
 			}
-
 			cout << "Total number of electrons: " << total_num_electrons << endl;
-		}// End charge if
+		}
+
 
 		// Go through every SiPM
 		std::cout << "Simulating Light" << std::endl;

@@ -106,24 +106,27 @@ int semi_analytic_hits::VUVHits(const int &Nphotons_created, const TVector3 &Sci
     acc detPoint;
     TVector3 ScintPoint_Temp = ScintPoint;
     TVector3 OpDetPoint_Temp = OpDetPoint;
-    if(optical_direction == 1){
+    if(optical_direction == 1){ // x == const plane - this is how the parametrisation was done
 	    detPoint.ax = OpDetPoint[0]; detPoint.ay = OpDetPoint[1]; detPoint.az = OpDetPoint[2];
   	    cosine = sqrt(pow(ScintPoint[0] - OpDetPoint[0],2)) / distance;
 	    r_distance = sqrt( pow(ScintPoint[1] - center_y_1, 2) + pow(ScintPoint[2] - center_z_1, 2));
     }  // centre coordinates of optical detector
-    else if(optical_direction == 2){
+    else if(optical_direction == 2){ // y == const plane - need to excange x and y
 	    detPoint.ax = OpDetPoint[1]; detPoint.ay = OpDetPoint[0]; detPoint.az = OpDetPoint[2];
 	    OpDetPoint_Temp[0] = detPoint.ax; OpDetPoint_Temp[1] = detPoint.ay; OpDetPoint_Temp[2] = detPoint.az;
 	    ScintPoint_Temp[0] = ScintPoint[1]; ScintPoint_Temp[1] = ScintPoint[0];
   	    cosine = sqrt(pow(ScintPoint[1] - OpDetPoint[1],2)) / distance;
 	    r_distance = sqrt( pow(ScintPoint[0] - center_x_2, 2) + pow(ScintPoint[2] - center_z_2, 2));
     }  // centre coordinates of optical detector
-    else if(optical_direction == 3){
+    else if(optical_direction == 3){// z == const plane - need to excange x and z
 	    detPoint.ax = OpDetPoint[2]; detPoint.ay = OpDetPoint[1]; detPoint.az = OpDetPoint[0];
 	    OpDetPoint_Temp[0] = detPoint.ax; OpDetPoint_Temp[1] = detPoint.ay; OpDetPoint_Temp[2] = detPoint.az;
 	    ScintPoint_Temp[0] = ScintPoint[2]; ScintPoint_Temp[2] = ScintPoint[0];
   	    cosine = sqrt(pow(ScintPoint[2] - OpDetPoint[2],2)) / distance;
+	    //cout << "ScintPoint[0]" << ScintPoint[0] << "ScintPoint[1]" << ScintPoint[1] << "ScintPoint[2]" << ScintPoint[2] << endl;
+	    //cout << center_x_3 << " " << center_y_3 << " " << center_z_3 << endl;
 	    r_distance = sqrt( pow(ScintPoint[0] - center_x_3, 2) + pow(ScintPoint[1] - center_y_3, 2));
+	    //cout << "r_distance" << r_distance << endl;
     }  // centre coordinates of optical detector
     else {std::cout << "Error: optical_direction not set correctly" << std::endl; exit(1);}
 
@@ -132,6 +135,9 @@ int semi_analytic_hits::VUVHits(const int &Nphotons_created, const TVector3 &Sci
 
     detPoint.w = y_dimension_detector; detPoint.h = z_dimension_detector; // width and height in cm of arapuca active window
     TVector3 ScintPoint_rel = ScintPoint_Temp - OpDetPoint_Temp;
+    /* cout << "ScintPoint_Temp: " << ScintPoint[0] << " " << ScintPoint[1] << " " << ScintPoint[2] << endl; */
+    /* cout << "detPoint: " << detPoint.ax << " " << detPoint.ay << " " << detPoint.az << endl; */
+    /* cout << "r_distance: " << r_distance << endl; */
 
     if (cosine < 0.001)
 	    solid_angle = 0;
@@ -158,16 +164,17 @@ int semi_analytic_hits::VUVHits(const int &Nphotons_created, const TVector3 &Sci
   // calculate number of photons hits by geometric acceptance: accounting for solid angle and LAr absorbtion length
   double hits_geo = exp(-1.*distance/L_abs) * (solid_angle / (4*pi)) * Nphotons_created;
   if(debug_2){
-  cout << "solid_angle: " << solid_angle << endl;
-  cout << "Nphotons_created: " << Nphotons_created << endl;
-  cout << "Geometric accepted gammas: " << hits_geo << endl;
+	  cout << "solid_angle: " << solid_angle << endl;
+	  cout << "Nphotons_created: " << Nphotons_created << endl;
+	  cout << "Geometric accepted gammas: " << hits_geo << endl;
   }
 
 
   // determine Gaisser-Hillas correction for Rayleigh scattering distance and angular dependence, accounting for border effects
   // offset angle bin
-  // TODO:
-  if(theta>80.0) return hits_geo;
+  if(theta>89.0){
+	  return hits_geo;
+  }
   int j = (theta/delta_angle);
 
   /* std::cout << " theta = " << theta << " delta_angle = " << delta_angle << " j = " << j << std::endl; */
@@ -178,10 +185,41 @@ int semi_analytic_hits::VUVHits(const int &Nphotons_created, const TVector3 &Sci
   // flat PDs
   if (optical_detector_type == 0 || optical_detector_type == 1){
     if (scintillation_type == 0) { // argon
-      pars_ini[0] = fGHVUVPars_flat_argon[0][j];
-      pars_ini[1] = fGHVUVPars_flat_argon[1][j];
-      pars_ini[2] = fGHVUVPars_flat_argon[2][j];
-      pars_ini[3] = fGHVUVPars_flat_argon[3][j];
+      if (j >= 8){
+        pars_ini[0] = fGHVUVPars_flat_argon[0][j];
+      }
+      else{
+	double temp1 = fGHVUVPars_flat_argon[0][j];
+      	double temp2 = fGHVUVPars_flat_argon[0][j+1];
+      	pars_ini[0] = temp1 + (temp2-temp1)*(theta-j*delta_angle)/delta_angle;
+      }
+
+      if(j >= 8){
+	pars_ini[1] = fGHVUVPars_flat_argon[1][j];
+      }
+      else{
+	double temp1 = fGHVUVPars_flat_argon[1][j];
+      	double temp2 = fGHVUVPars_flat_argon[1][j+1];
+      	pars_ini[1] = temp1 + (temp2-temp1)*(theta-j*delta_angle)/delta_angle;
+      }
+
+      if(j >= 8){
+	pars_ini[2] = fGHVUVPars_flat_argon[2][j];
+      }
+      else{
+	double temp1 = fGHVUVPars_flat_argon[2][j];
+      	double temp2 = fGHVUVPars_flat_argon[2][j+1];
+      	pars_ini[2] = temp1 + (temp2-temp1)*(theta-j*delta_angle)/delta_angle;
+      }
+
+      if(j >= 8){
+	pars_ini[3] = fGHVUVPars_flat_argon[3][j];
+      }
+      else{
+	double temp1 = fGHVUVPars_flat_argon[3][j];
+      	double temp2 = fGHVUVPars_flat_argon[3][j+1];
+      	pars_ini[3] = temp1 + (temp2-temp1)*(theta-j*delta_angle)/delta_angle;
+      }
       s1 = interpolate( angulo, slopes1_flat_argon, theta, true);
       s2 = interpolate( angulo, slopes2_flat_argon, theta, true);
       s3 = interpolate( angulo, slopes3_flat_argon, theta, true);
@@ -216,22 +254,36 @@ int semi_analytic_hits::VUVHits(const int &Nphotons_created, const TVector3 &Sci
   // apply correction
   double hits_vuv = 0 ;
   hits_vuv = gRandom->Poisson(GH_correction*hits_geo/cosine);
+  return hits_vuv;
+  if(GH_correction*hits_geo/cosine < 1) {
+  	//hits_vuv = gRandom->Poisson(GH_correction*hits_geo/cosine);
+	double rnd = gRandom->Rndm();
+	if(rnd < GH_correction*hits_geo/cosine){
+	 hits_vuv = 1;
+	}
+	else {
+		hits_vuv = 0;
+	}
+  }
+  else {
+  	hits_vuv = (int) (GH_correction*hits_geo/cosine);
+  }
+
   if(debug_2){
-  cout << "VUV hits: " << hits_vuv << endl;
-  std::cout<< " Nphotons_created = " << Nphotons_created << std::endl;
-  std::cout<< " hits_geo = " << hits_geo << std::endl;
-  std::cout << " distance = " << distance << std::endl;
-  std::cout<< " GH_correction/cosine = " << GH_correction/cosine << std::endl;
-  std::cout << " hits_vuv = " << hits_vuv << std::endl;
-  std::cout<< " GH_correction = " << GH_correction << std::endl;
-  std::cout<< " cosine = " << cosine << std::endl;
-  std::cout<< " hits_geo/Nphotons_created = " << hits_geo/Nphotons_created << std::endl;
-  std::cout<<" Solid Anlge = " << solid_angle << std::endl;
-  if(hits_vuv < 0) {return hits_geo;}
-  if(hits_vuv >= Nphotons_created || hits_vuv>= 1.2*hits_geo){return hits_geo;}
+	  cout << "VUV hits: " << hits_vuv << endl;
+	  std::cout<< " Nphotons_created = " << Nphotons_created << std::endl;
+	  std::cout<< " hits_geo = " << hits_geo << std::endl;
+	  std::cout << " distance = " << distance << std::endl;
+	  std::cout<< " GH_correction/cosine = " << GH_correction/cosine << std::endl;
+	  std::cout << " hits_vuv = " << hits_vuv << std::endl;
+	  std::cout<< " GH_correction = " << GH_correction << std::endl;
+	  std::cout<< " cosine = " << cosine << std::endl;
+	  std::cout<< " hits_geo/Nphotons_created = " << hits_geo/Nphotons_created << std::endl;
+	  std::cout<<" Solid Anlge = " << solid_angle << std::endl;
+	  if(hits_vuv < 0) {return hits_geo;}
+	  if(hits_vuv >= Nphotons_created || hits_vuv>= 1.2*hits_geo){return hits_geo;}
   }
   return hits_vuv;
-  //return hits_geo;
 }
 
 // gaisser-hillas function definition

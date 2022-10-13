@@ -74,14 +74,20 @@ private:
 
 	// DUNE-SP Gaisser-Hillas
 	// angle bins
-	std::vector<double> angulo = {5, 15, 25, 35, 45, 55, 65, 75, 85};
+	std::vector<double> angulo = {0, 10, 20, 30, 40, 50, 60, 70, 80};
 	const double delta_angle = 10.;
 
 	// Argon, RS = 99.9cm, flat PDs (Arapucas/Supercells)
-	const double fGHVUVPars_flat_argon[4][9] = { {1.23286, 1.20491, 1.1597, 1.08148, 0.986607, 0.868075, 0.725637, 0.633551, 0.469717},
-  								{150.325, 150.109, 156.294, 169.271, 179.642, 212.9, 232.173, 226.557, 215.166},
-  								{19.0558, 18.8478, 18.8757, 18.7149, 50.8662, 49.2247, 57.6717, 157.92, 172.494},
-  								{-3000, -3000, -3000, -3000, -1000, -1000, -1000, -100, -100} };
+	/* const double fGHVUVPars_flat_argon[4][9] = { {1.23286, 1.20491, 1.1597, 1.08148, 0.986607, 0.868075, 0.725637, 0.633551, 0.469717}, */
+  						     /* {150.325, 150.109, 156.294, 169.271, 179.642, 212.9, 232.173, 226.557, 215.166}, */
+  						     /* {19.0558, 18.8478, 18.8757, 18.7149, 50.8662, 49.2247, 57.6717, 157.92, 172.494}, */
+  						     /* {-3000, -3000, -3000, -3000, -1000, -1000, -1000, -100, -100} }; */
+	const double fGHVUVPars_flat_argon[4][9] = { {1.4-0.2, 1.38-0.2, 1.28-0.2, 1.17-0.2, 1.05-0.2, 0.93-0.2, 0.78-0.2, 0.633551-0.2, 0.49717-0.2},
+  						     {151.325, 149.109, 141.294, 134.271, 159.642, 161.9, 197.173, 211.557, 216.166},
+  						     {27.0558, 24.8478, 24.8757, 74.7149, 75.8662, 84.2247, 87.6717, 97.92, 107.494},
+  						     {-1090, -1202, -1285, -355, -353, -373, -359, -372, -375} };
+
+
 	std::vector<double> slopes1_flat_argon = {-9.63855e-05, -6.82604e-05, -9.63478e-05, -0.000121181, -0.000126611, -0.000115481, -8.61492e-05, -0.000112594, -7.80935e-05};
 	std::vector<double> slopes2_flat_argon = {-0.0662469, -0.0504497, -0.0596321, -0.0418021, -0.0342462, -0.0531668, -0.0522639, -0.0578887, -0.0591081};
 	std::vector<double> slopes3_flat_argon = {-0.00593207, -0.00672713, -0.0020843, -0.00216374, 0.00901291, 0.00385402, 0.0066081, 0.0341547, 0.0446519};
@@ -119,9 +125,9 @@ private:
 	// Dune
 	const double x_foils = 363.38405; const double y_foils = 0; const double z_foils = 696.294;	// cm
 
-	const double center_x_1 = 0;   const double center_y_1 = 300; const double center_z_1 = 200;	// cm
-	const double center_x_2 = 150; const double center_y_2 =   0; const double center_z_2 = 200;	// cm
-	const double center_x_3 = 150; const double center_y_3 = 300; const double center_z_3 = 400;	// cm
+	const double center_x_1 = 0;   const double center_y_1 = 300; const double center_z_1 = 200;	// cm  // x == constant
+	const double center_x_2 = 150; const double center_y_2 =   0; const double center_z_2 = 200;	// cm  // y == constant
+	const double center_x_3 = 700; const double center_y_3 = 300; const double center_z_3 = 0;	// cm  // z == constant
 
 	// DUNE-SP corrections
 	// Argon, flat PDs (Arapucas/Supercells)

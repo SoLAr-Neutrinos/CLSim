@@ -14,6 +14,7 @@
 #include "time_parameterisation.h"
 #include "utility_functions.h"
 #include "radiological_parameters.h"
+#include <omp.h>
 
 // File for flags (https://github.com/zhanxw/Argument)
 #include "Argument.h"
@@ -33,6 +34,7 @@ int main(int argc, char* argv[]){
 		ADD_PARAMETER_GROUP(pl,"Input")
         	ADD_BOOL_PARAMETER(pl, isHelp, "--help", "Print this Help Message")
         	ADD_INT_PARAMETER(pl, inum, "--number", "Number of events to simulate")
+        	ADD_INT_PARAMETER(pl, icores, "--core", "Number of threats to use")
         	ADD_BOOL_PARAMETER(pl, isExcl, "--exclOut", "Exclude the G4 Input from the Output files")
         	ADD_BOOL_PARAMETER(pl, isCharge, "--charge", "Enable Charge Simulation")
 		ADD_BOOL_PARAMETER(pl, isDiff, "--diffusion", "Enable Diffusion")
@@ -56,6 +58,7 @@ int main(int argc, char* argv[]){
 		cout << "		--charge: " << " to enable charge simulation - 0 by default" << endl;
 		cout << "		--diffusion: " << " If charge is enabled, diffussion is enabled. If it should be disabled set to 0" << endl;
 		cout << "		--exclOut: Exclude the G4 input from the output files" << endl;
+		cout << "		--number: number of threts to use in multithreded mode" << endl;
 		cout << "		--help: Print this help message" << endl;
 		return 1;
 	}
@@ -185,6 +188,14 @@ int main(int argc, char* argv[]){
 		NEventsToLoopOver = FLAG_inum;
 	}
 
+	if(FLAG_icores){
+		omp_set_num_threads(FLAG_icores);
+	}
+	else{
+		omp_set_num_threads(1);
+	}
+
+
 	cout << "Running over " << NEventsToLoopOver << " events" << endl;
 	data_output output_file(FLAG_REMAIN_ARG[3].c_str(), include_input, parameters::include_timings, parameters::include_reflected, G4InputFileName );
 
@@ -214,7 +225,12 @@ int main(int argc, char* argv[]){
 		total_time_vuv_array.clear();
 		// Vector of vectors for the charge readout
 		vector<vector<double>> total_time_charge;//(number_opdets, vector<double>);
+
 		total_time_charge.clear();
+		for(int i=0; i<number_opdets; i++){
+			vector<double> temp;
+			total_time_charge.push_back(temp);
+		}
 
 		vector<vector<double>> op_channel_pos(number_opdets, vector<double>(3,0.0));
 		std::cout << "Number of optical detectors: " << number_opdets << std::endl;
@@ -224,37 +240,32 @@ int main(int argc, char* argv[]){
 		std::vector<double> chargeyield(hit_start_x->size());
 		std::vector<double> numPhotons(hit_start_x->size());
 		std::vector<double> numElectrons(hit_start_x->size());
-		std::vector<std::vector<TVector3>> electronStartingPoints;
+		std::vector<TVector3> electronStartingPoints;
 
 		std::cout << "Preparing the Energy Depositions" << std::endl;
 
 		// This loop determines the number of electrons and the light yield for each hit
-
 		for (int i=0; i < hit_start_x->size(); i++){
 				// Stores the starting points for all the electrons for hit i
 			        std::vector<TVector3> electronStartingPoints_i;
 				// Stores the light/charge yield for hit i
 				// Check if an ionisation event
-				if(hit_process_key->at(i) == 1 || hit_process_key->at(i) == 6 || hit_process_key->at(i) == 7){
+				//if(hit_process_key->at(i) == 1 || hit_process_key->at(i) == 6 || hit_process_key->at(i) == 7){
 					double light_yield = hits_model.LArQL(hit_energy_deposit->at(i), hit_length->at(i), 0.5);
 					lightyield[i] = light_yield;
 
 					int number_photons = light_yield * hit_energy_deposit->at(i);
-					vector<double> v(number_photons, 0);
-					vector<double> target;
-					gRandom->RndmArray(number_photons, v.data());
-					copy_if(v.begin(), v.end(), back_inserter(target),[](float n ){ return  n < parameters::total_QE;});
-					numPhotons[i] = target.size();
+					numPhotons[i]=gRandom->Poisson(number_photons);
 
 					chargeyield[i] = hits_model.LArQQ(hit_energy_deposit->at(i), hit_length->at(i), 0.5);
 					numElectrons[i] = chargeyield[i] * hit_energy_deposit->at(i);
-				}
-				else{
-					numPhotons[i] = 0;
-					numElectrons[i] = 0;
-					electronStartingPoints.push_back(electronStartingPoints_i);
-					continue;
-				}
+				//}
+				//else{
+				//	numPhotons[i] = 0;
+				//	numElectrons[i] = 0;
+				//	electronStartingPoints.push_back(electronStartingPoints_i);
+				//	continue;
+				//}
 
 
 				if(charge){
@@ -287,62 +298,43 @@ int main(int argc, char* argv[]){
 						electronStartingPoints_i.push_back(TVector3(x_pos_final, y_pos_final, z_pos_final));
 					}
 					// Collection of all the starting points of all hits
-					// [[ hit1[electron1(x,y,z), electron2(x,y,z), electron3(x,y,z), ...], hit2[electron1, electron2, electron3, ...], ...]
-					electronStartingPoints.push_back(electronStartingPoints_i);
-				}
+					electronStartingPoints.insert(electronStartingPoints.end(), electronStartingPoints_i.begin(), electronStartingPoints_i.end());
+				} // End charge if
 		}
+
 
 		if(charge){
 			std::cout << "Simulating Charge" << std::endl;
-
 			// Here we loop over all the optical detectors and detectors.
 			// We then loop over all the hits and determine if the hit is within/above the detector.
+			// multithread: Combine both loops in one and then split the work between threads
+
+			#pragma omp parallel for shared(total_time_charge, opdet_position) collapse(2)
 			for(int op_channel = 0; op_channel < number_opdets; op_channel++) {
-				if(op_channel % (number_opdets/10) == 0)
-					std::cout << "op_channel: " << op_channel
-					   << " of " << number_opdets
-					   << " (" << (double)op_channel*100./(double)number_opdets <<"%)"<< endl;
-
-				std::vector<double> time_charge;
-				// Position of the optical detector
-				TVector3 OpDetPoint(opdet_position[op_channel][0],opdet_position[op_channel][1],opdet_position[op_channel][2]);
-
-				for(int HitIt = 0; HitIt < hit_start_x->size(); HitIt++){
-					// Position of the hit
-					if(hit_process_key->at(HitIt) != 1 && hit_process_key->at(HitIt) != 6 && hit_process_key->at(HitIt) != 7)
-						continue;
-
-					// Get all the starting points of the electrons for hit HitIt
-					std::vector<TVector3> electronStartingPoints_i = electronStartingPoints[HitIt];
-					// Loop over all the electrons for hit HitIt
-					for(int eIt = 0; eIt <numElectrons[HitIt] ; eIt++){
-						TVector3 electronStartingPoint = electronStartingPoints_i[eIt];
-						double x_pos = electronStartingPoint.X();
-						double y_pos = electronStartingPoint.Y();
-						double z_pos = electronStartingPoint.Z();
-						// Project down on the the z=0 plane
-						double drift_time = z_pos/parameters::drift_velocity;
-						// Currently hard coded 10cm detectors. Need to change this to be more general using the PixSize
-						if (abs(x_pos - OpDetPoint.X()) < 5 && abs(y_pos - OpDetPoint.Y()) < 5 ) {
-							time_charge.push_back(drift_time);
+				for(auto const &electronStartingPoint : electronStartingPoints){
+						if (abs(electronStartingPoint.x() - opdet_position[op_channel][0]) < 5 && abs(electronStartingPoint.y() - opdet_position[op_channel][1]) < 5 ) {
+							// make sure that only one thread is writing to the same op_channel - this should not be neccesary, and runs without it, non the less, I guess
+							#pragma omp critical
+							{
+								total_time_charge[op_channel].push_back(electronStartingPoint.z() / parameters::drift_velocity);
+							}
 						}
-					}// end for of number electrons
-				}// end for of hits
-				total_time_charge.push_back(time_charge);
+				}// End loop over all the electrons
 			}// end for of opdet
 
 			// Get total number of electrons
 			int total_num_electrons = 0;
-			for(int i=0; i<numElectrons.size(); i++){
-				total_num_electrons += numElectrons[i];
+			for(int i=0; i<total_time_charge.size(); i++){
+				total_num_electrons += total_time_charge[i].size();
 			}
 
 			cout << "Total number of electrons: " << total_num_electrons << endl;
-			cout << total_time_charge.size() << endl;
 		}// End charge if
 
 		// Go through every SiPM
 		std::cout << "Simulating Light" << std::endl;
+		int tot_num_photons_produced = 0;
+		int tot_num_photons_detected = 0;
 		for(int op_channel = 0; op_channel < number_opdets; op_channel++) {
 			if(op_channel % (number_opdets/10) == 0)
 				std::cout << "op_channel: " << op_channel
@@ -355,8 +347,7 @@ int main(int argc, char* argv[]){
 			// get optical detector direction - along (x, y, z) axis facing
 			int op_direction = opdet_direction[op_channel];
 
-
-			// get detection channel coordinates (in cm)
+				// get detection channel coordinates (in cm)
 			TVector3 OpDetPoint(opdet_position[op_channel][0],opdet_position[op_channel][1],opdet_position[op_channel][2]);
 			vector<double> op_det_pos = {OpDetPoint.X(), OpDetPoint.Y(), OpDetPoint.Z()};
 
@@ -368,8 +359,8 @@ int main(int argc, char* argv[]){
 			for (int i=0; i < num_hits; i++)
 			{
 
-				if(hit_process_key->at(i) != 1 && hit_process_key->at(i) != 6 && hit_process_key->at(i) != 7)
-					continue;
+				/* if(hit_process_key->at(i) != 1 && hit_process_key->at(i) != 6 && hit_process_key->at(i) != 7) */
+				/* 	continue; */
 
 		   		position_list[i][0] = hit_start_x->at(i);
 		    		position_list[i][1] = hit_start_y->at(i);
@@ -378,12 +369,8 @@ int main(int argc, char* argv[]){
 		    		double time_hit = hit_start_t->at(i); // in ns
 				time_hit*=0.001; // in us
 
-				/* // Light yield for the hit currently looked at */
-				/* double light_yield = lightyield[i]; */
-
 				unsigned int number_photons;
 		    		number_photons = gRandom->Poisson(numPhotons[i]);
-
 				assert(number_photons >= 0);
 
 				// Set the ratio of fast/slow component light according to the PDG type
@@ -415,8 +402,18 @@ int main(int argc, char* argv[]){
 				}
 
 				// gets the number of photon in the current detector
-				int num_VUV = hits_model.VUVHits(number_photons, ScintPoint, OpDetPoint, op_channel_type, 0, op_direction);
-				if(num_VUV== 0) { continue; } // forces the next iteration
+				double numVUV_ = hits_model.VUVHits(number_photons, ScintPoint, OpDetPoint, op_channel_type, 0, op_direction);
+				if(numVUV_== 0) { continue; } // forces the next iteration
+				vector<double> v(numVUV_, 0);
+				vector<double> target;
+				gRandom->RndmArray(numVUV_, v.data());
+				copy_if(v.begin(), v.end(), back_inserter(target),[](float n ){ return  n < parameters::total_QE;});
+				numVUV_ = gRandom->Poisson(target.size());
+				if(numVUV_== 0) { continue; } // forces the next iteration
+				//int num_VUV =gRandom->Poisson(numVUV_*0.4);
+				int num_VUV = numVUV_;
+
+				tot_num_photons_detected += num_VUV;
 
 				// Calculate the angle between the scinitllation point and the optical detector
 				double distance_to_pmt = (OpDetPoint-ScintPoint).Mag();
@@ -467,6 +464,11 @@ int main(int argc, char* argv[]){
 		    } // end of hit
 		total_time_vuv_array.push_back(total_time_vuv);
 		} // End of SiPM Loop
+		for(int HitIt = 0 ; HitIt < hit_start_x->size();  HitIt++){
+			tot_num_photons_produced += numPhotons[HitIt];
+		}
+	cout << tot_num_photons_produced << endl;
+	cout << tot_num_photons_detected << endl;
 	output_file.add_data_till(total_time_vuv_array,total_time_charge , lightyield, chargeyield);
 	lightyield.clear();
 	chargeyield.clear();

@@ -39,10 +39,11 @@ In this case, remove all library files (`yes | rm *.o`) and run `make` again.
 - `OutputFile`: Name of the output file
 
 - Optional arguments are:
-	- `--number`	 Run over a subset of events (first n) instead of all in the file
-	- `--exclOut 0`	 Disables the saving of the G4 input data to the output file
-	- `--charge 1`	 Enables the charge simulation including diffusion
-	- `--diffusion 0`	 Disables the diffusion during the drift
+	- `--number <int>`	 Run over a subset of events (first n) instead of all in the file
+	- `--charge <PathToPlacementFile>` Enables the charge simulation including diffusion using the placment file given
+	- `--diffusion`	 Disables the diffusion during the drift
+	- `--pixSize <double>` Using a specified size for the charge detector pixels. Otherwise the size of the SiPMs are assumed
+	- `--exclOut`	 Disables the saving of the G4 input data to the output file
 
 ## Output File
 
@@ -64,8 +65,13 @@ for(int photonIt = 0; photonIt < total_time_vuv->at(17).size(); photonIt++){
 ```
 
 Same holds for the charge output.
+If the option `--charge` is not enabled, it will still produce an output elemnt for it, which will be empty.
+
+There are two TH2Poly's stored in the output file. These store the locations of the SiPM/pixels.
+Again, if not run with the `charge` option, this is just an empty TH2Poly for the charge.
 
 - **TL:DR** :  Returns `vector<vector<double>>` of PD-IDs and hit time for each photon/electron
+- **A note on the numbering: TH2Poly bin n corresponds to detector bin n-1!**
 - Example in `Docs/ExampleMacro`
 
 ## Placement Files
@@ -118,6 +124,8 @@ If the detector sits on the `z=0` plane, it probably faces along the z-axis.
 This is noted with the value `3`.
 For detectors facing along the `y` axis, this value should be `2`, and for detectors facing along the `x` axis, `1`.
 
+#### Generate for grid layout
+
 To generate these files, a helper script is supplied in `PlacementFiles/generate_detpos.py`.
 It generates a grid placement of a given distancing.
 Currently the same distancing is assumed for the `x`, `y` and `z` coordinates.
@@ -139,6 +147,29 @@ Then run `python 1_plot_detector_locations.py` and you will see a 3D plot of the
 ![Example of the placement file on the X-Y plane with $2\times 2cm^2$ pixels](./explacement.png){width=80%}
 
 
+#### Generate for SoLAr Tiles
+
+Also here we have a helper script, `PlacementFiles/generate_detpos_SoLAr.py`.
+At the top, you determine the size of the Anode/Readout plane and the distance between single tiles.
+A tile here is understood to be a $1\times 1$ cm$^2$ assembly of 5 charge pixels and 1 SiPM (see below).
+
+
+The code returns two files, `SiPM` and `Pixel`.
+They store the positions of the SiPM's and Pixel's...
+
+![A single tile for the SoLAr simulations](./1Tile.png){width=48%}
+![A 10x10 cm readout plane](./DenseTiles.png){width=48%}
+
+There is a know problem to occour if the spacing and sizes are incompatible, that some of the detectors actually lie outside of the actual detection plane. Again, see below.
+
+![A problematic placement](./TileProblems.png){width=48%}
+
+It's the users obligation to verify no strange placements.
+
+For smaller files we have the `plot_SoLAr_locations.py` to return a 3D plot to verify.
+For larger ones, this is code is to slow.
+A 2D version could speed things up - but not implemented yet. (Or move to a proper GUI/C++ version at some point).
+
 ## Simulation procedure
 
 ### Light
@@ -147,9 +178,25 @@ Then run `python 1_plot_detector_locations.py` and you will see a 3D plot of the
 - Removed the visible light and enabled placement of PD on all planes, implemented LArQL model
 - Split the total amount of photons produced in an event by the fractional solid angle of each photo-detector element
 
+The idea of the light simulation is to first approximate the photons that arrive in each Photo Detector by its relative solid angle and then correct this approximation for effects like rayleigh scattering.
+The geometrical approximation for detector $i$ is then just
+
+\begin{equation}
+N_\gamma^{Det} = \Delta E \times S_\gamma(dE, dx, \epsilon) \times \Omega_{i}/4\pi\times exp(-d/\lambda)
+\end{equation}
+
+- $\Delta E$ energy deposit
+- $S_\gamma$ the light yield function, in our case LArQL
+- $Omega/4\pi$ fractional solid angle of the detector i
+- $\lambda$ the absorption length (here 20m)
+
+Then a Gaisser-Hillas function is used to correct for the effect of Rayleigh scattering and positional dependences.
+
 ![Conceptual Drawing of the Semi Analytical Model](./SemiAnal.pdf){width=48%}
 
-- Drawbacks: Scales linearly with the number of PD.
+The time is finally constructed using a exponential plus landau function which is randomly sampled.
+
+- Drawbacks: Scales linearly with the number of PD. Results dependend on the parametrisation. This was build for DuNE and SBND, including the wires etc. This means that events which are placed in a smaller Volume (like SoLAr) are affected, if they are not in the center of the detector. Moving them to one side, we accumulate different effects due to asymmetry. For DuNE/SBND these are corrected for, but for SoLAr they wont. Its hard to tell how significant they are. We could rebuild a parametrisation for SoLAr using Danieles G4SOLAr.
 
 
 ### Charge
@@ -161,17 +208,25 @@ Along the z-axis the electrons are smeared with the $D_L$ drift constant in the 
 These starting positions are then stored in a vector.
 Here we assume that the drift-direction is along the z-axis, and the charge-readout sits on the z=0 plane.
 In the main event loop we loop through all the produced starting points, figure out if a PD/CD sits below this point.
-If yes, a time entry is produced according to $t = z/v_{drift}$.
+For this a TH2Poly is used as a way to determine the CD-ID.
+The time is then produced according to $t = z/v_{drift}$ and stored in the output object.
 
 ![Conceptual Drawing of the Charge Simulation](./Charge.pdf){width=48%}
 
 ![Starting Positions of electrons of a single energy deposit after smearing](./starting.png){width=48%}
 
-- Current Status: The runtime is a major problem. This can be solved by the following things:
-	- The smearing currently calls gRandom 4 times for each produced electron. This can be speed up by calling `RndmArray` once for each hit.
-	- One can multithread the loop over the number of electrons in the beginning
-	- One can multithread the loop over hits in the down-projection part of the code (~line 216)
-	- One could assume a readout that covers the full plane, and just project down the x-y coordinates. This would alleviate the need for the loop over the detectors, which would be a major performance improvement. It comes with its own drawbacks. Could be implemented as an alternative function.
-	- The main loop can also be rewritten in a different way evading the loop over loops.
+- Drawbacks: Currently we need to assume a super-non-optimized electric field, which means most of the charge is lost, as it is not sitting perfectly above a pixel.
 
-- If code should be used long term, a refactoring in its own class would be necessary
+### ToDo's
+
+- Current Status: The runtime is an issue
+	1. Light
+		- Around 0.3 s/event up to 2s/event at 8400 SiPMs. For SoLAr this will be more challenging.
+		- No straight forward to multi thread this, as ROOT objects are called in the loop which are not thread safe!
+		- If code should be used long term, a refactoring in its own class would be necessary
+
+- General: Maybe use the same file for Charge and Light and use the currently unused variable Detector Type as an identifier for charge/light detector
+- The TH2Poly for the light output assumes that the orientation is 3 (on the x-y axis). This should be fixed for possible light-field-cage studies. Meaning, that 6 TH2Polys should be created and stored.
+
+
+- Validate / Build parametrisation for SoLAr

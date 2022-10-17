@@ -10,7 +10,7 @@
 data_output::data_output(const char* output_file_name, const bool include_input, const bool include_timings, const bool include_reflected, const char* original_file_name) : include_reflected{include_reflected} {
 
 	// Get the original Input File and catch the original tree
-			// create file
+	// create file
 	output_file = new TFile(output_file_name, "RECREATE", "Output File");
 
 	if (output_file->IsOpen()) {
@@ -42,12 +42,22 @@ data_output::data_output(const char* output_file_name, const bool include_input,
 	test_tree->Branch("LightYield", &LightYield);
 	test_tree->Branch("ChargeYield", &ChargeYield);
 
+
+
 }
 
 // destructor
 data_output::~data_output(){
 	// deleting output_file also deletes all trees properly
 	delete output_file;
+}
+
+void data_output::add_maps(TH2Poly *h2charge_input, TH2Poly *h2light_input){
+	output_file->cd();
+	h2charge = (TH2Poly*)h2charge_input->Clone("charge_detector_map");
+	h2light = (TH2Poly*)h2light_input->Clone("light_detector_map");
+	h2light->Write();
+	h2charge->Write();
 }
 
 
@@ -62,5 +72,17 @@ void data_output::add_data_till(const std::vector<std::vector<double>> &times_vu
     total_time_charge = times_charge;
     LightYield = light_yield;
     ChargeYield = chargeyield;
+    test_tree->Fill();
+}
+
+void data_output::add_data_till(const std::vector<std::vector<double>> &times_vuv, const std::vector<std::vector<double>> &times_charge,const std::vector<double> &light_yield, const std::vector<double> &chargeyield, TH2Poly *light, TH2Poly *charge){
+    TH2Poly* light_temp = (TH2Poly*)light->Clone();
+    TH2Poly* charge_temp = (TH2Poly*)charge->Clone();
+    total_time_vuv = times_vuv;
+    total_time_charge = times_charge;
+    LightYield = light_yield;
+    ChargeYield = chargeyield;
+    h2light = light_temp;
+    h2charge = charge_temp;
     test_tree->Fill();
 }

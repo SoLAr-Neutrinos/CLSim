@@ -3,38 +3,37 @@
 #Define .C script that we want ROOT to interprete later on
 ROOTScript="macro.C"
 
-declare -a FileArray=("out")
-InputDirectory="."
+# Root files without the .root extension
+declare -a InputFileArray=("root_file_from_simulation_1" "root_file_from_simulation_2" )
 
-declare -a RunOverFile=( 1 )
+# Where are the root files stored
+InputDirectory="./Input"
+
+# Over which files do we want to loop
+declare -a RunOverFile=( 1 0 )
 
 #Defining input and output directory with respect to current directory
-#Looping over available  files
-for ((i=0;i<${#FileArray[@]};++i))
+for ((i=0;i<${#InputFileArray[@]};++i))
 do
 	if [ ${RunOverFile[i]} -eq 1 ]
 	then
 	#Getting the variables at the current iterator
 
-	File="${FileArray[i]}"
-	dEdx="${dEdxArray[i]}"
-	Coverage="${Coverage[i]}"
+	InputFile="${InputFileArray[i]}"
 
 
-	echo "Currently working on: "$File
+	echo "Currently working on: "$InputFile
 
 	#Define output directories for PNGs and ROOT file
 	OutputDirectory="Output"
-	PNGOutputFolderName=$OutputDirectory"/PNGs/"$File
+	PNGOutputFolderName=$OutputDirectory"/PNGs/"$InputFile
 	ROOTOutputFolderName=$OutputDirectory"/ROOT"
 
 	#Create output directories (the -p option checks if the output directory already exists and does nothing in case they do)
 	mkdir -p $PNGOutputFolderName
 	mkdir -p $ROOTOutputFolderName
 
-	echo ": "$File
-
-	root -l -b -q $ROOTScript'("'$File'","'$InputDirectory'", "'$OutputDirectory'")'
+	root -l -b -q $ROOTScript'("'$InputFile'", "'$InputDirectory'", "'$OutputDirectory'")'
 	fi
 done
 

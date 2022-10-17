@@ -1,4 +1,4 @@
-CXXFLAGS=-std=c++11 -g $(shell root-config --cflags) -fopenmp
+CXXFLAGS=-std=c++11 -g $(shell root-config --cflags) -fopenmp -W
 LIBS=$(shell root-config --libs) -lMathMore -fopenmp
 
 run : analyze_light

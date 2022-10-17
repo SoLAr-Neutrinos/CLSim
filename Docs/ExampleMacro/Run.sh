@@ -4,7 +4,7 @@
 ROOTScript="macro.C"
 
 # Root files without the .root extension
-declare -a InputFileArray=("root_file_from_simulation_1" "root_file_from_simulation_2" )
+declare -a InputFileArray=("example_input_file" "root_file_from_simulation_2" )
 
 # Where are the root files stored
 InputDirectory="./Input"

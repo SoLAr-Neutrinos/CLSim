@@ -27,7 +27,7 @@ namespace parameters {
     double drift_trans = 13.237; //cm^2/s
 
 
-    // Detection Efficency
+    // Detection Efficency - NOT USED
     double SiPM_QE = 0.4;
     double total_QE = SiPM_QE;
 
@@ -41,8 +41,8 @@ namespace parameters {
     const double t_triplet = 1.5e-6;//0.0000015;         // 1.5 us
     // prompt/late ratio
     // electron-like
-    const double singlet_fraction_electron = 0.30;
-    const double triplet_fraction_electron = 0.70;
+    const double singlet_fraction_electron = 0.25;
+    const double triplet_fraction_electron = 0.75;
     // alpha
     const double singlet_fraction_alpha = 0.75;
     const double triplet_fraction_alpha = 0.25;

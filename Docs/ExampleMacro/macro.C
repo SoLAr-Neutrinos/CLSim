@@ -1,3 +1,11 @@
+// This is an overview of some operations that we perfom on the output files from the light sim
+// After going through this, you should be able to perform basically any study you want using
+// the light and charge outputs.
+// Many of these operations you will perform very often, in different macros. So, it is a good
+// idea to create a small library of functions that you can use in your macros!
+// If this is your first root-macro however, this is probably not the place to start.
+
+
 #include <iostream>
 #include <string>
 #include <fstream>
@@ -21,7 +29,6 @@
 #include <map>
 
 using std::cout, std::endl, std::string, std::vector;
-
 
 
 void macro(string CLInputFile="nuis_out", string InputDirectory="", string OutputDirectory="" )
@@ -125,6 +132,8 @@ for (unsigned int EventIt=9; EventIt < NEventsToLoopOver; EventIt++){
 	CLTree->GetEntry(EventIt);
 	G4Tree->GetEntry(EventIt);
 
+
+	// We want to store the event display in these TH2Poly's
 	TH2Poly *Charge = (TH2Poly*)ChargeReadout->Clone();
 	TH2Poly *Light = (TH2Poly*)LightReadout->Clone();
 

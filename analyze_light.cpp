@@ -376,8 +376,9 @@ int main(int argc, char* argv[]){
 							x_pos_final = x_pos + radius * cos(rand_angle);
 							y_pos_final = y_pos + radius * sin(rand_angle);
 							z_pos_final = z_pos + gRandom->Gaus(0,rad_long);
+							//Make sure that we do not create electrons on/behind the surface of the detector
 							int it =0;
-							while(z_pos_final  < 0){
+							while(z_pos_final  <= 0){
 								z_pos_final = z_pos + gRandom->Gaus(0,rad_long/(2*it));
 								it++;
 							}

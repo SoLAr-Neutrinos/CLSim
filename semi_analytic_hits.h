@@ -111,11 +111,11 @@ private:
 
 	// Detector properties:
 
-	// plane depth
+	// plane depth -- curnetli not used
 	// Dune
 	const double plane_depth = 363.38405;	// cm
 
-	// Cathode plane covered by foils
+	// Cathode plane covered by foils - currently not used
 	// Dune
 	// size
 	const double y_dimension_foils = 1204.7255 + 5.466;	// cm		// 2 panels y height 602.36275 with 5.466cm gaps between
@@ -125,9 +125,22 @@ private:
 	// Dune
 	const double x_foils = 363.38405; const double y_foils = 0; const double z_foils = 696.294;	// cm
 
-	const double center_x_1 = 0;   const double center_y_1 = 300; const double center_z_1 = 200;	// cm  // x == constant
-	const double center_x_2 = 150; const double center_y_2 =   0; const double center_z_2 = 200;	// cm  // y == constant
-	const double center_x_3 = 700; const double center_y_3 = 300; const double center_z_3 = 0;	// cm  // z == constant
+	// Center Coordinates
+
+	// CENTERS TO BE CHANGED WITH THE CHANGE OF DETECTOR SIZE
+
+	//Example for 1x1x1 m^3 detector
+
+	const double center_x_1 = 0;  const double center_y_1 = 50;  const double center_z_1 = 50;	// cm  // x == constant
+	const double center_x_2 = 50; const double center_y_2 =   0; const double center_z_2 = 50;	// cm  // y == constant
+	const double center_x_3 = 50; const double center_y_3 = 50;  const double center_z_3 = 0;	// cm  // z == constant
+
+	// Example for DUNE (14*6*3.6)
+
+/* 	const double center_x_1 = 0;   const double center_y_1 = 300; const double center_z_1 = 200;	// cm  // x == constant */
+/* 	const double center_x_2 = 150; const double center_y_2 =   0; const double center_z_2 = 200;	// cm  // y == constant */
+/* 	const double center_x_3 = 700; const double center_y_3 = 300; const double center_z_3 = 0;	// cm  // z == constant */
+
 
 	// DUNE-SP corrections
 	// Argon, flat PDs (Arapucas/Supercells)

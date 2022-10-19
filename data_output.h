@@ -25,13 +25,12 @@ private:
 	TTree *test_tree;
 
 	// tree entries:
-	std::vector<int> SiPM_id;
 	std::vector<std::vector<double>> total_time_vuv;
 	std::vector<std::vector<double>> total_time_charge;
 	std::vector<double> LightYield;
 	std::vector<double> ChargeYield;
 
-	//TH2Poly
+	//TH2Poly for output - currently not used
 	TH2Poly *h2charge=nullptr;
 
 	TH2Poly *h2light=nullptr;
@@ -39,7 +38,8 @@ private:
 
 
 
-// event
+	// event
+	// most of this is not used anymore - can be deleted if this doesnt break the code (shoudlnt)
 	int event_no;
 	double event_E;
 	double event_x_pos, event_y_pos, event_z_pos;

@@ -29,20 +29,24 @@ semi_analytic_hits::semi_analytic_hits() {
 
 }
 
+
+// Function to set the SiPM size
 void semi_analytic_hits::setPixelSize(const double y,const double z){
 	y_dimension_detector = y;	// cm
 	z_dimension_detector = z;	// cm
 
 }
 
+
+// Funciton for the LArQL modeling
 double QBirks(double dE, double dx, double E){
 
-double k_Birks=0.0486;
-double A_Birks=0.800;
-double Wion = 23.6 ;
-double Nex_Ni = 0.29;
-double Ni = 1.0e6/Wion;
-double pLAr = 1.30;
+	double k_Birks=0.0486;
+	double A_Birks=0.800;
+	double Wion = 23.6 ;
+	double Nex_Ni = 0.29;
+	double Ni = 1.0e6/Wion;
+	double pLAr = 1.30;
 
     double edep = dE/dx;
     if(edep<1) edep = 1.;
@@ -135,9 +139,6 @@ int semi_analytic_hits::VUVHits(const int &Nphotons_created, const TVector3 &Sci
 
     detPoint.w = y_dimension_detector; detPoint.h = z_dimension_detector; // width and height in cm of arapuca active window
     TVector3 ScintPoint_rel = ScintPoint_Temp - OpDetPoint_Temp;
-    /* cout << "ScintPoint_Temp: " << ScintPoint[0] << " " << ScintPoint[1] << " " << ScintPoint[2] << endl; */
-    /* cout << "detPoint: " << detPoint.ax << " " << detPoint.ay << " " << detPoint.az << endl; */
-    /* cout << "r_distance: " << r_distance << endl; */
 
     if (cosine < 0.001)
 	    solid_angle = 0;

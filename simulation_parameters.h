@@ -4,7 +4,8 @@
 namespace parameters {
 
 	// output file
-	const char *output_file_name = "testing_xenon.root";
+	// Fall back iption
+	const char *output_file_name = "testing_fallback.root";
 
     ///-------------------------------------
     //--------Simulation Settings-----------
@@ -27,11 +28,7 @@ namespace parameters {
     double drift_trans = 13.237; //cm^2/s
 
 
-    // Detection Efficency - NOT USED
-    double SiPM_QE = 0.4;
-    double total_QE = SiPM_QE;
-
-    // timing parametersiation properties
+   // timing parametersiation properties
     const double timing_discretisation_step_size = 2.12; // cm
 
     /* // scintillation timing properties */

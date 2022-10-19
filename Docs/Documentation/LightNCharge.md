@@ -40,10 +40,13 @@ In this case, remove all library files (`yes | rm *.o`) and run `make` again.
 
 - Optional arguments are:
 	- `--number <int>`	 Run over a subset of events (first n) instead of all in the file
-	- `--charge <PathToPlacementFile>` Enables the charge simulation including diffusion using the placment file given
+	- `--charge <PathToPlacementFile>` Enables the charge simulation including diffusion using the placement file given
 	- `--diffusion`	 Disables the diffusion during the drift
 	- `--pixSize <double>` Using a specified size for the charge detector pixels. Otherwise the size of the SiPMs are assumed
 	- `--exclOut`	 Disables the saving of the G4 input data to the output file
+
+- When using a different detector size, make sure to set the center points correctly in `semi_analytical_hits.h` at line 130.
+- To change the electric field strength used for the LArQL formalism use `simulation_parameters.h` at line 23.
 
 ## Output File
 
@@ -187,7 +190,7 @@ A 2D version could speed things up - but not implemented yet. (Or move to a prop
 - Removed the visible light and enabled placement of PD on all planes, implemented LArQL model
 - Split the total amount of photons produced in an event by the fractional solid angle of each photo-detector element
 
-The idea of the light simulation is to first approximate the photons that arrive in each Photo Detector by its relative solid angle and then correct this approximation for effects like rayleigh scattering.
+The idea of the light simulation is to first approximate the photons that arrive in each Photo Detector by its relative solid angle and then correct this approximation for effects like Rayleigh scattering.
 The geometrical approximation for detector $i$ is then just
 
 \begin{equation}
@@ -203,9 +206,9 @@ N_\gamma^{Det} = \Delta E \times S_\gamma(dE, dx, \epsilon) \times \Omega_{i}/4\
 
 Then a Gaisser-Hillas function is used to correct for the effect of Rayleigh scattering and positional dependences.
 The time is finally constructed using a exponential plus landau function which is randomly sampled.
-For the details about the Gaiser Hillas and the time sampling, the paper and source code are a good combination as explaination.
+For the details about the Gaiser Hillas and the time sampling, the paper and source code are a good combination as explanation.
 
-- Drawbacks: Scales linearly with the number of PD. Results dependend on the parametrisation. This was build for DuNE and SBND, including the wires etc. This means that events which are placed in a smaller Volume (like SoLAr) are affected, if they are not in the center of the detector. Moving them to one side, we accumulate different effects due to asymmetry. For DuNE/SBND these are corrected for, but for SoLAr they wont. Its hard to tell how significant they are. We could rebuild a parametrisation for SoLAr using Danieles G4SOLAr.
+- Drawbacks: Scales linearly with the number of PD. Results dependent on the parametrisation. This was build for DuNE and SBND, including the wires etc. This means that events which are placed in a smaller Volume (like SoLAr) are affected, if they are not in the center of the detector. Moving them to one side, we accumulate different effects due to asymmetry. For DuNE/SBND these are corrected for, but for SoLAr they wont. Its hard to tell how significant they are. We could rebuild a parametrisation for SoLAr using Danieles G4SOLAr.
 
 
 ### Charge
@@ -263,7 +266,7 @@ For this we need to access the `j` subvector of `total_time_vuv` and then loop t
 	```
 
 
-- **Get the bin center of a detector** As `TH2Poly` seems to not have `GetBinCenter` for a single bin number implemented, we need to do this ourselfs...  This is done building dictionaries of bin numbers and bin centers.
+- **Get the bin center of a detector** As `TH2Poly` seems to not have `GetBinCenter` for a single bin number implemented, we need to do this ourselves...  This is done building dictionaries of bin numbers and bin centers.
 
 	```cpp
 	CLTree->GetEntry(0);
@@ -288,8 +291,8 @@ For this we need to access the `j` subvector of `total_time_vuv` and then loop t
 	double y_center = CDbinsY(i);
 	```
 > This should be part of any analysis script we write. Therefore it is worth building these dictionaries in the simulation itself and storing them in the root file directly. To do this, copy the construction code above in to the simulation code, just behind the building of these TH2Poly-objects.
-> Then you need to define a new `data_output` functon, that stores these dictionaries in to the root file.
-> The same dicitonaries is build for the light detectors inside the example script.
+> Then you need to define a new `data_output` function, that stores these dictionaries in to the root file.
+> The same dictionaries is build for the light detectors inside the example script.
 
 - **Conecting a single detection element to a coordinate**. As the numbering scheme in TH2Poly is strange, the i'th subvector corresponds to the bin $i+1$ inside the TH2Poly. Meaning, to get its center coordinates, we need to run `CDbinsX(i+1)` and `CDbinsY(i+1)`. This could be circumvented when building the dictionary differently. But I prefer to have the direct bin numbering in the dictionary, instead of the shifted one. Feel free to change to your liking.
 

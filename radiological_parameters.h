@@ -1,7 +1,9 @@
 // this file contains parameters used in simulation MERGED FILE
 #include "TRandom3.h"
 namespace radiological {
-	
+
+	// Basically all can be deleted, as we do not use this anymore (19.10.2022 - TIll)
+
         ///-------------------------------------
         ////----LAr & Ar39 properties--------------------
         /////-------------------------------------
@@ -36,7 +38,7 @@ namespace radiological {
 	//-------Positions of radioactive material------
 	//----------------------------------------------
 	//------[these come from Jingyuan/LArSoft]------
-        //40KB,40KG 
+        //40KB,40KG
         const double K_x_position_range[2] {3.495e2,3.505e2};      // cm
         const double K_y_position_range[2] {-600,600};    // cm
         const double K_z_position_range[2] {0,1395};    // cm
@@ -48,5 +50,5 @@ namespace radiological {
         const double Po_x_position_range[2] {4.77e-1,1.477};      // cm
         const double Po_y_position_range[2] {-600,600};    // cm
         const double Po_z_position_range[2] {0,1395};    // cm
-        
+
 }

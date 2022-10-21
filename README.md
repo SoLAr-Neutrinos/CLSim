@@ -8,7 +8,7 @@ Parametrized charge and light simulation
 
 ## Input Files 
 
-Use [qpixg4](https://github.com/Q-Pix/qpixg4) for the G4 generation. 
+Use [qpixg4](https://github.com/Q-Pix/qpixg4) for the G4 generation.  (We should probably fork that at some point to have something like this - Talk to Johnny about this!)
 
 ## Run 
 

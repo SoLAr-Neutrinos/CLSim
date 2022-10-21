@@ -76,6 +76,8 @@ For the analytical model we take the Geant4 Output without the light info, loop 
 Currently not working properly.
 This is thought as an alternative to the G4 light propagation to save time.
 
+This is old - use the new documentation for full story (we have charge implemented aswell)
+
 
 ## Summary
 
